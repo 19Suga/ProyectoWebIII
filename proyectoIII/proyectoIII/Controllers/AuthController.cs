@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿    using Microsoft.AspNetCore.Mvc;
 using proyectoIII.data;
+using proyectoIII.Models.DTOs;
 
 namespace proyectoIII.Controllers
 {
@@ -15,18 +16,26 @@ namespace proyectoIII.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login(string email, string password)
+        public IActionResult Login([FromBody] LoginDTO loginDTO)
         {
-            var usuario = _context.Usuarios.FirstOrDefault(u => u.Email == email && u.Password == password);
+            if (string.IsNullOrEmpty(loginDTO.Email) || string.IsNullOrEmpty(loginDTO.Password))
+                return BadRequest("Obligado llenar todos los campos");
+
+            var usuario = _context.Usuarios.FirstOrDefault(u =>
+                u.Email == loginDTO.Email &&
+                u.Password == loginDTO.Password &&
+                u.Activo);
 
             if (usuario == null)
-                return Unauthorized("Datos incorrectos");
+                return Unauthorized("datos invalidos");
 
-            return Ok(new
+            return Ok(new UsuarioDTO
             {
-                id = usuario.Id,
-                nombre = usuario.Nombre,
-                rol = usuario.Rol
+                Id = usuario.Id,
+                Nombre = usuario.Nombre,
+                Email = usuario.Email,
+                Rol = usuario.Rol,
+                FechaCreacion = usuario.FechaCreacion
             });
         }
     }
