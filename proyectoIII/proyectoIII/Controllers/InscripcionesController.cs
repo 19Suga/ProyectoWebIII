@@ -18,82 +18,62 @@ namespace proyectoIII.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<InscripcionDTO>>> GetInscripciones()
+        public async Task<ActionResult<List<Inscripcion>>> GetInscripciones(string rolUsuario, int usuarioId)
         {
-            var inscripciones = await _context.Inscripciones
-                .Include(i => i.Estudiante)
-                .Include(i => i.Curso)
-                .Where(i => i.Estado == "Activo")
-                .Select(i => new InscripcionDTO
-                {
-                    Id = i.Id,
-                    EstudianteId = i.EstudianteId,
-                    EstudianteNombre = i.Estudiante.Nombre,
-                    CursoId = i.CursoId,
-                    CursoNombre = i.Curso.Nombre,
-                    FechaInscripcion = i.FechaInscripcion,
-                    Estado = i.Estado
-                })
-                .ToListAsync();
-
-            return Ok(inscripciones);
+            if (rolUsuario == "Admin")
+            {
+                // Admin ve todo
+                return await _context.Inscripciones
+                    .Include(i => i.Estudiante)
+                    .Include(i => i.Curso)
+                    .Where(i => i.Estado == "Activo")
+                    .ToListAsync();
+            }
+            else if (rolUsuario == "Docente")
+            {
+                return await _context.Inscripciones
+                    .Include(i => i.Estudiante)
+                    .Include(i => i.Curso)
+                    .Where(i => i.Estado == "Activo" && i.Curso.DocenteId == usuarioId)
+                    .ToListAsync();
+            }
+            else 
+            {
+                return await _context.Inscripciones
+                    .Include(i => i.Curso)
+                    .Where(i => i.EstudianteId == usuarioId && i.Estado == "Activo")
+                    .ToListAsync();
+            }
         }
 
         [HttpPost]
-        public async Task<ActionResult<InscripcionDTO>> PostInscripcion([FromBody] InscripcionDTO inscripcionDto)
+        public async Task<ActionResult<Inscripcion>> PostInscripcion(Inscripcion inscripcion, string rolUsuario)
         {
-            var estudiante = await _context.Usuarios.FindAsync(inscripcionDto.EstudianteId);
-            if (estudiante == null)
-                return BadRequest("Estudiante no encontrado");
+            if (rolUsuario != "Admin")
+                return Unauthorized("Solo administradores pueden inscribir estudiantes");
 
-            var curso = await _context.Cursos.FindAsync(inscripcionDto.CursoId);
+            var estudiante = await _context.Usuarios.FindAsync(inscripcion.EstudianteId);
+            if (estudiante == null || estudiante.Rol != "Estudiante")
+                return BadRequest("Solo estudiantes pueden ser inscritos");
+
+            var curso = await _context.Cursos.FindAsync(inscripcion.CursoId);
             if (curso == null)
                 return BadRequest("Curso no encontrado");
 
-            var existeInscripcion = await _context.Inscripciones
-                .AnyAsync(i => i.EstudianteId == inscripcionDto.EstudianteId &&
-                              i.CursoId == inscripcionDto.CursoId &&
+            var existe = await _context.Inscripciones
+                .AnyAsync(i => i.EstudianteId == inscripcion.EstudianteId &&
+                              i.CursoId == inscripcion.CursoId &&
                               i.Estado == "Activo");
+            if (existe)
+                return BadRequest("El estudiante ya está inscrito en este curso");
 
-            if (existeInscripcion)
-                return BadRequest("estudiante ya está inscrito en este curso");
-
-            var inscripcion = new Inscripcion
-            {
-                EstudianteId = inscripcionDto.EstudianteId,
-                CursoId = inscripcionDto.CursoId,
-                FechaInscripcion = DateTime.Now,
-                Estado = "Activo"
-            };
+            inscripcion.FechaInscripcion = DateTime.Now;
+            inscripcion.Estado = "Activo";
 
             _context.Inscripciones.Add(inscripcion);
             await _context.SaveChangesAsync();
 
-            var responseDto = new InscripcionDTO
-            {
-                Id = inscripcion.Id,
-                EstudianteId = inscripcion.EstudianteId,
-                EstudianteNombre = estudiante.Nombre,
-                CursoId = inscripcion.CursoId,
-                CursoNombre = curso.Nombre,
-                FechaInscripcion = inscripcion.FechaInscripcion,
-                Estado = inscripcion.Estado
-            };
-
-            return Ok(responseDto);
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteInscripcion(int id)
-        {
-            var inscripcion = await _context.Inscripciones.FindAsync(id);
-            if (inscripcion == null)
-                return NotFound("Inscripción no encontrada");
-
-            inscripcion.Estado = "Inactivo";
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok(inscripcion);
         }
     }
 }

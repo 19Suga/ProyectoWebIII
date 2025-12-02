@@ -6,20 +6,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Base de datos en memoria
 builder.Services.AddDbContext<AplicationDbContext>(options =>
     options.UseInMemoryDatabase("EducacionDB"));
-
-
+;
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())    
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -30,26 +28,60 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 
-
+// Datos de prueba
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AplicationDbContext>();
 
-    context.Usuarios.Add(new proyectoIII.Models.Usuario
+    // Usuarios de prueba
+    var admin = new proyectoIII.Models.Usuario
     {
-        Nombre = "Deymar",
-        Email = "admin@prueba.com",
+        Nombre = "Administrador",
+        Email = "admin@test.com",
         Password = "123",
         Rol = "Admin"
-    });
-    context.Usuarios.Add(new proyectoIII.Models.Usuario
+    };
+
+    var docente = new proyectoIII.Models.Usuario
     {
-        Nombre = "Estudiante",
-        Email = "estudiante@prueba.com",
+        Nombre = "Profesor Carlos",
+        Email = "carlos@test.com",
+        Password = "123",
+        Rol = "Docente"
+    };
+
+    var estudiante = new proyectoIII.Models.Usuario
+    {
+        Nombre = "Estudiante Ana",
+        Email = "ana@test.com",
         Password = "123",
         Rol = "Estudiante"
-    });
+    };
 
+    context.Usuarios.AddRange(admin, docente, estudiante);
+    context.SaveChanges();
+
+    // Curso de prueba
+    var curso = new proyectoIII.Models.Curso
+    {
+        Nombre = "Matemáticas Básicas",
+        Descripcion = "Curso introductorio de matemáticas",
+        DocenteId = docente.Id,
+        FechaInicio = DateTime.Now,
+        FechaFin = DateTime.Now.AddMonths(3)
+    };
+
+    context.Cursos.Add(curso);
+    context.SaveChanges();
+
+    // Inscripción de prueba
+    var inscripcion = new proyectoIII.Models.Inscripcion
+    {
+        EstudianteId = estudiante.Id,
+        CursoId = curso.Id
+    };
+
+    context.Inscripciones.Add(inscripcion);
     context.SaveChanges();
 }
 

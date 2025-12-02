@@ -11,6 +11,9 @@
         public DateTime FechaFin { get; set; }
         public bool Activo { get; set; } = true;
 
+        // Relaciones actualizadas
         public ICollection<Inscripcion> Inscripciones { get; set; } = new List<Inscripcion>();
+        public ICollection<Materia> Materias { get; set; } = new List<Materia>();  // ← Cambiado
+        public ICollection<Evaluacion> Evaluaciones { get; set; } = new List<Evaluacion>();
     }
 }

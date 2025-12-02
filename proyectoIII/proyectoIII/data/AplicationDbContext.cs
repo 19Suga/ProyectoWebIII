@@ -10,7 +10,7 @@ namespace proyectoIII.data
 
         public DbSet<Curso> Cursos { get; set; }
         public DbSet<Inscripcion> Inscripciones { get; set; }
-        public DbSet<Material> Materiales { get; set; }
+        public DbSet<Materia> Materias { get; set; }
         public DbSet<Evaluacion> Evaluaciones { get; set; }
         public DbSet<Calificacion> Calificaciones { get; set; }
     }

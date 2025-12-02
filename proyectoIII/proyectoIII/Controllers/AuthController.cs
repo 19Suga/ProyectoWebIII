@@ -16,26 +16,22 @@ namespace proyectoIII.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginDTO loginDTO)
+        public IActionResult Login(string email, string password)
         {
-            if (string.IsNullOrEmpty(loginDTO.Email) || string.IsNullOrEmpty(loginDTO.Password))
-                return BadRequest("Obligado llenar todos los campos");
-
             var usuario = _context.Usuarios.FirstOrDefault(u =>
-                u.Email == loginDTO.Email &&
-                u.Password == loginDTO.Password &&
+                u.Email == email &&
+                u.Password == password &&
                 u.Activo);
 
             if (usuario == null)
-                return Unauthorized("datos invalidos");
+                return Unauthorized("Credenciales inválidas");
 
-            return Ok(new UsuarioDTO
+            return Ok(new
             {
-                Id = usuario.Id,
-                Nombre = usuario.Nombre,
-                Email = usuario.Email,
-                Rol = usuario.Rol,
-                FechaCreacion = usuario.FechaCreacion
+                id = usuario.Id,
+                nombre = usuario.Nombre,
+                email = usuario.Email,
+                rol = usuario.Rol
             });
         }
     }
