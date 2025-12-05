@@ -33,7 +33,6 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AplicationDbContext>();
 
-    // Usuarios de prueba
     var admin = new proyectoIII.Models.Usuario
     {
         Nombre = "Administrador",
@@ -61,10 +60,9 @@ using (var scope = app.Services.CreateScope())
     context.Usuarios.AddRange(admin, docente, estudiante);
     context.SaveChanges();
 
-    // Curso de prueba
     var curso = new proyectoIII.Models.Curso
     {
-        Nombre = "Matemáticas Básicas",
+        Nombre = "Matemáticas",
         Descripcion = "Curso introductorio de matemáticas",
         DocenteId = docente.Id,
         FechaInicio = DateTime.Now,
@@ -74,7 +72,6 @@ using (var scope = app.Services.CreateScope())
     context.Cursos.Add(curso);
     context.SaveChanges();
 
-    // Inscripción de prueba
     var inscripcion = new proyectoIII.Models.Inscripcion
     {
         EstudianteId = estudiante.Id,
