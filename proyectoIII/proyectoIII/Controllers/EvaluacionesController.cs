@@ -1,73 +1,69 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using proyectoIII.data;
+using proyectoIII.Data;
 using proyectoIII.Models;
 using proyectoIII.Models.DTOs;
 
 namespace proyectoIII.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class EvaluacionesController : ControllerBase
     {
-        private readonly AplicationDbContext _context;
+        private readonly ApplicationDbContext _context;
 
-        public EvaluacionesController(AplicationDbContext context)
+        public EvaluacionesController(ApplicationDbContext context)
         {
             _context = context;
         }
 
         [HttpGet("curso/{cursoId}")]
-        public async Task<ActionResult<List<Evaluacion>>> GetEvaluacionesPorCurso(int cursoId)
+        public async Task<ActionResult<IEnumerable<EvaluacionDTO>>> GetEvaluacionesByCurso(int cursoId)
         {
-            return await _context.Evaluaciones
+            var evaluaciones = await _context.Evaluaciones
                 .Where(e => e.CursoId == cursoId)
-                .Include(e => e.Curso)
+                .Include(e => e.Creador)
+                .Select(e => new EvaluacionDTO
+                {
+                    Id = e.Id,
+                    CursoId = e.CursoId,
+                    CreadorId = e.CreadorId,
+                    CreadorNombre = e.Creador!.Nombre,
+                    Titulo = e.Titulo,
+                    Descripcion = e.Descripcion,
+                    Tipo = e.Tipo.ToString(),
+                    Ponderacion = e.Ponderacion,
+                    FechaDisponible = e.FechaDisponible,
+                    FechaLimite = e.FechaLimite,
+                    Activa = e.Activa
+                })
                 .ToListAsync();
+
+            return Ok(evaluaciones);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Evaluacion>> PostEvaluacion(Evaluacion evaluacion, string rolUsuario, int usuarioId)
+        public async Task<ActionResult<EvaluacionDTO>> PostEvaluacion(EvaluacionCreacionDTO evaluacionDTO)
         {
-            var curso = await _context.Cursos.FindAsync(evaluacion.CursoId);
-            if (curso == null)
-                return BadRequest("Curso no encontrado");
+            var evaluacion = new Evaluacion
+            {
+                CursoId = evaluacionDTO.CursoId,
+                CreadorId = evaluacionDTO.CreadorId,
+                Titulo = evaluacionDTO.Titulo,
+                Descripcion = evaluacionDTO.Descripcion,
+                Tipo = evaluacionDTO.Tipo,
+                Ponderacion = evaluacionDTO.Ponderacion,
+                FechaDisponible = evaluacionDTO.FechaDisponible,
+                FechaLimite = evaluacionDTO.FechaLimite,
+                Activa = true
+            };
 
-            if (rolUsuario != "Admin" && usuarioId != curso.DocenteId)
-                return Unauthorized("Solo el docente del curso puede crear evaluaciones");
-
-            evaluacion.FechaCreacion = DateTime.Now;
             _context.Evaluaciones.Add(evaluacion);
             await _context.SaveChangesAsync();
 
-            return Ok(evaluacion);
-        }
-
-        [HttpPost("{evaluacionId}/calificar")]
-        public async Task<ActionResult<Calificacion>> CalificarEstudiante(int evaluacionId, Calificacion calificacion, string rolUsuario, int usuarioId)
-        {
-            var evaluacion = await _context.Evaluaciones
-                .Include(e => e.Curso)
-                .FirstOrDefaultAsync(e => e.Id == evaluacionId);
-
-            if (evaluacion == null)
-                return BadRequest("Evaluación no encontrada");
-
-            if (rolUsuario != "Admin" && usuarioId != evaluacion.Curso.DocenteId)
-                return Unauthorized("Solo el docente del curso puede calificar");
-
-            var estudiante = await _context.Usuarios.FindAsync(calificacion.EstudianteId);
-            if (estudiante == null || estudiante.Rol != "Estudiante")
-                return BadRequest("Solo estudiantes pueden ser calificados");
-
-            calificacion.EvaluacionId = evaluacionId;
-            calificacion.FechaCalificacion = DateTime.Now;
-
-            _context.Calificaciones.Add(calificacion);
-            await _context.SaveChangesAsync();
-
-            return Ok(calificacion);
+            return CreatedAtAction(nameof(GetEvaluacionesByCurso),
+                new { cursoId = evaluacion.CursoId },
+                evaluacionDTO);
         }
     }
 }
-

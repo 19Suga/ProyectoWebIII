@@ -3,16 +3,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace proyectoIII.Models
 {
-    public enum TipoEvaluacion
+    public enum TipoMaterial
     {
-        Examen = 1,
-        Tarea = 2,
-        Proyecto = 3,
-        Quiz = 4,
-        Participacion = 5
+        Documento = 1,
+        Video = 2,
+        Enlace = 3,
+        Presentacion = 4,
+        Otro = 5
     }
 
-    public class Evaluacion
+    public class MaterialCurso
     {
         [Key]
         public int Id { get; set; }
@@ -31,22 +31,15 @@ namespace proyectoIII.Models
         public string? Descripcion { get; set; }
 
         [Required]
-        public TipoEvaluacion Tipo { get; set; }
+        public TipoMaterial Tipo { get; set; }
 
-        [Required]
+        [StringLength(500)]
+        public string? UrlArchivo { get; set; }
+
+        [StringLength(500)]
+        public string? UrlRecurso { get; set; }
+
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
-
-        [Required]
-        public DateTime FechaDisponible { get; set; }
-
-        [Required]
-        public DateTime FechaLimite { get; set; }
-
-        [Required]
-        [Range(0, 100)]
-        public decimal Ponderacion { get; set; }
-
-        public bool Activa { get; set; } = true;
 
         // Relaciones
         [ForeignKey("CursoId")]
@@ -54,7 +47,5 @@ namespace proyectoIII.Models
 
         [ForeignKey("CreadorId")]
         public virtual Usuario? Creador { get; set; }
-
-        public virtual ICollection<Calificacion>? Calificaciones { get; set; }
     }
 }
